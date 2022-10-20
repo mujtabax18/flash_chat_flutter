@@ -82,7 +82,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>  with SingleTickerProvide
               btnonPress: (){
                 Navigator.pushNamed(context, LoginScreen.id);
               },
-              btnColor: Colors.blueAccent,
+              btnColor: Colors.lightBlueAccent,
 
             ),
             CustomElevatedButton(btnTxt: "Registration",
