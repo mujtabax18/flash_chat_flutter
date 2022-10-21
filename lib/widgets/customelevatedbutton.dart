@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 class CustomElevatedButton extends StatelessWidget {
   CustomElevatedButton({required this.btnTxt,this.btnColor=Colors.blue,required this.btnonPress,
   this.btnBorderRadius = 30.0,this.btnElevation=5.0,this.btnVerticalPadding=16.0,
-  this.btnHeight=42.0,this.btnMinWidth=200.0});
+  this.btnHeight=42.0,this.btnMinWidth=200.0,
+  this.btnTextColor=Colors.white});
   String btnTxt;
   Color btnColor;
+  Color btnTextColor;
   final VoidCallback btnonPress;
   final double btnBorderRadius;
   final double btnElevation;
@@ -27,7 +29,11 @@ class CustomElevatedButton extends StatelessWidget {
           height: btnHeight,
           child: Text(
             btnTxt,
+          style: TextStyle(
+            color: btnTextColor,
           ),
+          )
+          ,
         ),
       ),
     );
