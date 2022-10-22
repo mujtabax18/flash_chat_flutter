@@ -9,7 +9,10 @@ class CustomTextFieldElevatedBorder extends StatelessWidget {
   , this.txtEnableBorderOutlineRadius=32.0,
   this.txtEnableBorderOutlineWidth=1.0,
   this.txtFocusedBorderOutlineRadius=32.0
-  , this.txtFocusedBorderOutlineWidth=.0});
+  , this.txtFocusedBorderOutlineWidth=.0
+  , this.txtAlign= TextAlign.center, this.txtKeyBoardType = TextInputType.text,
+    this.txtObsure=false,
+  });
 
  final String txtHint;
  final Function(String) txtOnChange;
@@ -26,12 +29,22 @@ class CustomTextFieldElevatedBorder extends StatelessWidget {
  final double txtEnableBorderOutlineWidth;
  final double txtEnableBorderOutlineRadius;
 
+ final TextInputType txtKeyBoardType;
+ final bool txtObsure;
+ final TextAlign txtAlign;
+
   @override
   Widget build(BuildContext context) {
     return TextField(
+      keyboardType: txtKeyBoardType,
+      obscureText: txtObsure,
+      textAlign: txtAlign,
       onChanged: txtOnChange,
       decoration: InputDecoration(
         hintText: txtHint,
+        fillColor: Colors.white,
+        focusColor: Colors.blue,
+        filled: true,
         contentPadding:
         EdgeInsets.symmetric(vertical: txtContentPaddingVerticle, horizontal: txtContentPaddingHorizontal),
         border: OutlineInputBorder(
