@@ -1,23 +1,28 @@
-import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flash_chat_flutter/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat_flutter/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:elegant_notification/elegant_notification.dart';
 import 'package:elegant_notification/resources/arrays.dart';
 
 
 class ChatScreen extends StatefulWidget {
+
   static String id='ChatScreen';
   @override
   _ChatScreenState createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-   final _auth=FirebaseAuth.instance;
+  final _fireStor=FirebaseFirestore.instance;
+  late String message;
+  final _auth=FirebaseAuth.instance;
    late User loginUser;
-
+   bool sending=false;
+   var  messages=[];
    void getUser() async{
      try
          {
@@ -46,6 +51,16 @@ class _ChatScreenState extends State<ChatScreen> {
      }
    }
 
+  void getMessagesData()async{
+ await  for(var snapshot in _fireStor.collection('messages').snapshots()) {
+      for (var data1 in snapshot.docs) {
+        print(data1.data());
+      }
+    }
+
+  }
+
+
 
    @override
   void initState() {
@@ -59,6 +74,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // TODO: implement dispose
     super.dispose();
     _auth.signOut();
+    getMessagesData();
   }
   @override
   Widget build(BuildContext context) {
@@ -76,37 +92,64 @@ class _ChatScreenState extends State<ChatScreen> {
         title: const Text('⚡️Chat'),
         backgroundColor: Colors.lightBlueAccent,
       ),
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Container(
-              decoration: kMessageContainerDecoration,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: <Widget>[
-                  Expanded(
-                    child: TextField(
-                      onChanged: (value) {
-                        //Do something with the user input.
+      body: ModalProgressHUD(
+        inAsyncCall: sending,
+        child: SafeArea(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Container(
+                decoration: kMessageContainerDecoration,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    Expanded(
+                      child: TextField(
+                        onChanged: (value) {
+                          message=value;
+                        },
+                        decoration: kMessageTextFieldDecoration,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () async{
+                        setState(() {
+                          sending=true;
+                        });
+                        try{
+                          await _fireStor.collection("messages").add({
+                            'msg': message,
+                            'sender': loginUser.email,
+                          });
+                         // getMessagesData();
+                        }
+                        catch(e){
+                          setState(() {
+                            sending=false;
+                          });
+                          ElegantNotification.error(
+                            width: 360,
+                            notificationPosition: NotificationPosition.topRight,
+                            animation: AnimationType.fromRight,
+                            title: Text('Error'),
+                            description: Text(e.toString()),
+                          ).show(context);
+                        }
+                        setState(() {
+                         sending=false;
+                       });
                       },
-                      decoration: kMessageTextFieldDecoration,
+                      child: const Text(
+                        'Send',
+                        style: kSendButtonTextStyle,
+                      ),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      //Implement send functionality.
-                    },
-                    child: const Text(
-                      'Send',
-                      style: kSendButtonTextStyle,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
