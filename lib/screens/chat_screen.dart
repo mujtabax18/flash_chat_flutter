@@ -17,7 +17,8 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final _fireStor=FirebaseFirestore.instance;
+  final messageTextController=TextEditingController();
+  final _firetor= FirebaseFirestore.instance;
   late String message;
   final _auth=FirebaseAuth.instance;
    late User loginUser;
@@ -51,14 +52,6 @@ class _ChatScreenState extends State<ChatScreen> {
      }
    }
 
-  void getMessagesData()async{
- await  for(var snapshot in _fireStor.collection('messages').snapshots()) {
-      for (var data1 in snapshot.docs) {
-        print(data1.data());
-      }
-    }
-
-  }
 
 
 
@@ -67,6 +60,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // TODO: implement initState
     super.initState();
     getUser();
+
   }
 
   @override
@@ -74,7 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // TODO: implement dispose
     super.dispose();
     _auth.signOut();
-    getMessagesData();
+
   }
   @override
   Widget build(BuildContext context) {
@@ -99,6 +93,8 @@ class _ChatScreenState extends State<ChatScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
+              messageStreams( firetor: _firetor,user: loginUser.email ?? 'nomail'),
+              
               Container(
                 decoration: kMessageContainerDecoration,
                 child: Row(
@@ -106,6 +102,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: <Widget>[
                     Expanded(
                       child: TextField(
+                        controller: messageTextController,
                         onChanged: (value) {
                           message=value;
                         },
@@ -118,11 +115,12 @@ class _ChatScreenState extends State<ChatScreen> {
                           sending=true;
                         });
                         try{
-                          await _fireStor.collection("messages").add({
+                          messageTextController.clear();
+                          await _firetor.collection("messages").add({
                             'msg': message,
                             'sender': loginUser.email,
                           });
-                         // getMessagesData();
+                         //  getMessagesData();
                         }
                         catch(e){
                           setState(() {
@@ -151,6 +149,88 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class messageStreams extends StatelessWidget {
+  messageStreams({required this.firetor, required this.user});
+  final String user;
+  final firetor;
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: firetor.collection('messages').snapshots(),
+      builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return const Text('Something went wrong');
+        }
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Text("Loading");
+        }
+        return Expanded(
+          child: ListView(
+            children: snapshot.data!.docs
+                .map((DocumentSnapshot document) {
+              Map<String, dynamic> data =
+              document.data()! as Map<String, dynamic>;
+             bool isme= user==data['sender'] ?true : false;
+              return messageBubble( data: data,isme: isme,);
+            })
+                .toList()
+                .cast(),
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+
+class messageBubble extends StatelessWidget {
+  messageBubble({required this.data,required this.isme});
+  final  Map<String, dynamic> data;
+ final bool isme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(10.0),
+      child: Column(
+        crossAxisAlignment:isme? CrossAxisAlignment.start: CrossAxisAlignment.end,
+        children: [
+          Text(
+            data['sender'],
+            style: TextStyle(
+              fontSize: 12.0,
+              color: Colors.black54,
+            ),
+          ),
+          Material(
+            borderRadius:isme? BorderRadius.only(
+                topRight: Radius.circular(30),
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30)): BorderRadius.only(
+                topLeft: Radius.circular(30),
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30))
+           ,
+            elevation: 5.0,
+            color:isme?  Colors.white:Colors.lightBlueAccent,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),
+              child: Text(
+                data['msg'],
+                style: TextStyle(
+                  color:isme? Colors.black: Colors.white,
+                  fontSize: 15.0,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
