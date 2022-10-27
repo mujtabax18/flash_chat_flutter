@@ -1,9 +1,9 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flash_chat_flutter/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat_flutter/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'package:modal_progress_hud_nsn/modal_progress_hud_nsn.dart';
 import 'package:elegant_notification/elegant_notification.dart';
 import 'package:elegant_notification/resources/arrays.dart';
@@ -21,25 +21,41 @@ class _ChatScreenState extends State<ChatScreen> {
   final _firetor= FirebaseFirestore.instance;
   late String message;
   final _auth=FirebaseAuth.instance;
-   late User loginUser;
+    User? loginUser;
+
+    bool userlogined=false;
    bool sending=false;
    var  messages=[];
+
+
+
    void getUser() async{
      try
          {
-           final user =await _auth.currentUser;
+
+           final User? user =await _auth.currentUser;
            if(user!=null)
              {
                loginUser=user;
-               ElegantNotification.success(
-                 width: 360,
-                 notificationPosition: NotificationPosition.topRight,
-                 animation: AnimationType.fromRight,
-                 title: Text('Welcome'),
-                 description: Text('Welcome! ${loginUser.email}'),
-               ).show(context);
+              if(user.email!=null) {
+          ElegantNotification.success(
+            width: 360,
+            notificationPosition: NotificationPosition.topRight,
+            animation: AnimationType.fromRight,
+            title: Text('Welcome'),
+            description: Text('Welcome! ${loginUser?.email}'),
+          ).show(context);
+              setState(() {
+                sending=false;
+              });
+              }
              }
-         }
+           else{
+             setState(() {
+               sending=true;
+             });
+           }
+            }
          catch(e)
      {
        ElegantNotification.error(
@@ -51,8 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
        ).show(context);
      }
    }
-
-
 
 
    @override
@@ -93,7 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              messageStreams( firetor: _firetor,user: loginUser.email ?? 'nomail'),
+              MessageStreams( firetor: _firetor,user: loginUser?.email ?? 'nomail'),
               
               Container(
                 decoration: kMessageContainerDecoration,
@@ -102,6 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: <Widget>[
                     Expanded(
                       child: TextField(
+
                         controller: messageTextController,
                         onChanged: (value) {
                           message=value;
@@ -118,9 +133,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           messageTextController.clear();
                           await _firetor.collection("messages").add({
                             'msg': message,
-                            'sender': loginUser.email,
+                            'sender': loginUser?.email,
                           });
-                         //  getMessagesData();
                         }
                         catch(e){
                           setState(() {
@@ -154,12 +168,13 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-class messageStreams extends StatelessWidget {
-  messageStreams({required this.firetor, required this.user});
+class MessageStreams extends StatelessWidget {
+  MessageStreams({required this.firetor, required this.user});
   final String user;
   final firetor;
   @override
   Widget build(BuildContext context) {
+
     return StreamBuilder(
       stream: firetor.collection('messages').snapshots(),
       builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -171,12 +186,13 @@ class messageStreams extends StatelessWidget {
         }
         return Expanded(
           child: ListView(
+            reverse: true,
             children: snapshot.data!.docs
                 .map((DocumentSnapshot document) {
               Map<String, dynamic> data =
               document.data()! as Map<String, dynamic>;
-             bool isme= user==data['sender'] ?true : false;
-              return messageBubble( data: data,isme: isme,);
+             bool isme= user==data['sender']  ?true : false;
+              return messageBubble( data: data,isme: !isme,);
             })
                 .toList()
                 .cast(),
